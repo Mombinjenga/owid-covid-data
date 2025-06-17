@@ -1,40 +1,53 @@
-# Import necessary libraries
+# Data Loading 
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Define countries of interest
-countries_of_interest = ['Kenya', 'USA', 'India']  # Example countries
+countries_of_interest = ['Kenya', 'USA', 'India']
 
-# Load the dataset
-df = pd.read_csv('owid.csv')
+# Load the filtered dataset
+filtered_df = pd.read_csv('cleaned_owid.csv')
 
-# Define filtered_df from the dataset
-filtered_df = df[df['location'].isin(countries_of_interest)].copy()
-
-# Ensure the 'date' column is in datetime format
+# Ensure date is datetime
 filtered_df['date'] = pd.to_datetime(filtered_df['date'])
 
-# Plot cumulative vaccinations over time for selected countries
-plt.figure(figsize=(10, 6))
-for country in countries_of_interest:
+# Handle missing data
+filtered_df = filtered_df.dropna(subset=['total_vaccinations', 'population'])
+filtered_df = filtered_df[filtered_df['total_vaccinations'] > 0]
+
+# Calculate percent vaccinated
+filtered_df['percent_vaccinated'] = (filtered_df['total_vaccinations'] / filtered_df['population']) * 100
+
+# Line plot: Cumulative vaccinations
+plt.figure(figsize=(12, 7))
+colors = ['blue', 'green', 'red']
+for i, country in enumerate(countries_of_interest):
     country_data = filtered_df[filtered_df['location'] == country]
-    plt.plot(country_data['date'], country_data['total_vaccinations'], label=country)
-plt.title('Cumulative Vaccinations Over Time')
-plt.xlabel('Date')
-plt.ylabel('Total Vaccinations')
-plt.legend()
+    plt.plot(country_data['date'], country_data['total_vaccinations'], label=country, color=colors[i], linewidth=2)
+plt.title('Cumulative Vaccinations Over Time', fontsize=14)
+plt.xlabel('Date', fontsize=12)
+plt.ylabel('Total Vaccinations', fontsize=12)
+plt.legend(fontsize=10)
+plt.grid(True, linestyle='--', alpha=0.7)
 plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
 
-# Compare % vaccinated population
-plt.figure(figsize=(10, 6))
-filtered_df['percent_vaccinated'] = (filtered_df['total_vaccinations'] / filtered_df['population']) * 100
-sns.barplot(data=filtered_df, x='location', y='percent_vaccinated', ci=None, order=countries_of_interest)
-plt.title('Percentage of Vaccinated Population')
-plt.xlabel('Country')
-plt.ylabel('% Vaccinated')
+# Bar plot: Percent vaccinated (latest date per country)
+latest_vax = filtered_df.sort_values('date').groupby('location').tail(1)
+plt.figure(figsize=(12, 7))
+sns.barplot(data=latest_vax, x='location', y='percent_vaccinated', order=countries_of_interest, palette='Blues_d')
+plt.title('Percentage of Vaccinated Population (Latest Date)', fontsize=14)
+plt.xlabel('Country', fontsize=12)
+plt.ylabel('% Vaccinated', fontsize=12)
 plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
+
+# Debug data
+print("\nData preview:")
+print(filtered_df[['location', 'date', 'total_vaccinations', 'population', 'percent_vaccinated']].head())
+print("\nMissing values:")
+print(filtered_df[['total_vaccinations', 'population', 'percent_vaccinated']].isna().sum())

@@ -12,6 +12,7 @@ df = pd.read_csv('owid.csv')
 # Define filtered_df from the dataset
 filtered_df = df[df['location'].isin(countries_of_interest)].copy()
 
+
 # Ensure the 'date' column is in datetime format
 filtered_df['date'] = pd.to_datetime(filtered_df['date'])
 
